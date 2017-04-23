@@ -1,0 +1,3 @@
+The data for this project was downloaded from the following link:
+
+https://catalog.data.gov/dataset/consumer-complaint-database#topic=consumer_navigation

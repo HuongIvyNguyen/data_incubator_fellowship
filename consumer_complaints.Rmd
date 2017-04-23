@@ -1,0 +1,26 @@
+---
+title: "Investigating the Qualities of Business Services Using Consumer Complaints"
+author: "Huong (Ivy) Nguyen"
+date: "April 23, 2017"
+output: html_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+
+options(scpien = 9999)
+
+#load the dataset
+df = read.csv("Consumer_Complaints.csv")
+```
+
+# INTRODUCTION:
+
+
+
+```{r}
+summary(df)
+str(df)
+head(df)
+```
+
