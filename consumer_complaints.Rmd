@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(echo=FALSE, warning=TRUE, message=FALSE)
 
 options(scpien = 9999)
 
@@ -14,13 +14,124 @@ options(scpien = 9999)
 df = read.csv("Consumer_Complaints.csv")
 ```
 
-# INTRODUCTION:
+##**INTRODUCTION**##
 
+This project involves investigating and evaluating the quality of business services from different categories across the United States based on the [Consumer Compalaint Database](https://catalog.data.gov/dataset/consumer-complaint-database#topic=consumer_navigation) collected by the Consumer Financial Protection Bureau (CFPB). The main goal of this project is to use the provided database to point out the quality of business services offered to customers based on the complaints filed. In addition, this data analysis could potentially help businesses compare their customer services or customer satisfactory versus their competitors. Through this comparison, businesses can improve the employee training or develop a new strategy for their business plan to make more profit.   
 
+##**DATA EXPLORATORY SECTION**##
+
+### Data Structure
 
 ```{r}
+#Get a summary of the data
 summary(df)
+
+#Obtain details of each variable
 str(df)
+
+#View couple lines of the dataframe to see how the data looks like
 head(df)
 ```
+
+This dataset contains 762444 observations (rows) and 18 different variables. After looking through the dataset, I want to know how many products are present within this database. 
+
+```{r}
+###Load necessary packages for data exploration and analysis###
+require(ggplot2)
+require(grid)
+require(scales)
+require(dplyr)
+require(gridExtra)
+library(RColorBrewer)
+library(ggthemes)
+```
+
+```{r}
+print(paste("There are", length(unique(df$Product)), "different business services in this dataset."))
+```
+
+First, I want to count the number of complaints for each different business service. In order to accomplish this, I will have to create a new dataframe, which has the sum of count of complaints for each product based on the state. 
+
+```{r}
+complaints_by_product <- df %>%
+  group_by(Product, State) %>%
+  summarize(complaints_sum = length(Complaint.ID))
+```
+
+After investigating this new dataframe, I noticed that there are 12 rows without a state being specified for each product category. These 12 rows are stored in the new_complaints_by_products dataframe. My initial suspection is that these rows are the average of the number of complaints for each service. Let's check out if this assumption is correct.
+
+```{r}
+new_complaints_by_product <- complaints_by_product[complaints_by_product$State == '',]
+
+complaints_by_product_check <- filter(complaints_by_product, State=='') %>%
+  group_by(Product)%>%
+  summarize(sum_count = mean(complaints_sum))
+```
+
+After checking, the two dataframes: complaints_by_product and new_complaints_by_product look exactly the same. Therefore, I decided to drop these rows out of my complaint_by_product dataset since it would be redundant to keep them. In addition, I would like to get an average number of complaints across all the states to see which product has the most complaints in the U.S.
+
+```{r}
+complaints_sum <- complaints_by_product[complaints_by_product$State != '',]%>%
+  group_by(Product) %>%
+  summarize(complaints_sum = sum(complaints_sum))
+
+ggplot(data = complaints_sum, aes(x=Product, y=complaints_sum, fill=Product))+
+  geom_bar(stat = 'Identity',
+           position = 'dodge')+
+  ggtitle("The average number of complaints by product across all states in the U.S.")+
+  theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.4))
+```
+
+Mortgage has the highestnumber of complaints of all categories, which makes me more curious to investigate further into differnt sub-product of this product/service to see which service has the most number of complaints and whether these complaints are resolved. However, before jumping to this set of investigation. I would like to group the number of complaints for each product based on different regions within the U.S. to see whether there is a distribution regarding the quality of these business services. 
+
+```{r}
+west = c('WA','OR','CA','ID','NV','MT','WY','UT','AZ','CO','NM', 'AK', 'HI')
+south = c('TX','OK','AR','LA','MS','AL','TN','KY','WV','VA','NC','MD','DE','SC','GA','FL')
+midwest = c('ND','SD','NE','KS','IA','MO','MN','WI','IL','MI','IN','OH')
+northeast = c('PA','NY','NJ','CT','RI','MA','VT','NH','ME')
+
+complaints_by_product <- complaints_by_product[complaints_by_product$State != '',]
+
+#Initialize region column with all NAs 
+complaints_by_product$region <- NA
+
+complaints_by_product$region[complaints_by_product$State %in% west] <-'West'
+complaints_by_product$region[complaints_by_product$State %in% south] <-'South'
+complaints_by_product$region[complaints_by_product$State %in% midwest] <-'Midwest'
+complaints_by_product$region[complaints_by_product$State %in% northeast] <-'Northeast'
+```
+
+After assign the region for each row, I also noticed that there are several rows that cannot be assigned due to the wrong state abbreviation. Since it is impossible to identify which state these rows belong to, I decided to remove them from my data analysis. 
+
+```{r}
+#Remove na values 
+complaints_by_product <- na.omit(complaints_by_product)
+
+#Calculate sum of complaints based on product and region
+complaints_by_region <- complaints_by_product %>%
+  group_by(region, Product)%>%
+  summarize(complaints_sum = sum(complaints_sum))
+
+#Generate plot for regions
+ggplot(data=complaints_by_region, 
+       aes(x=Product, y=complaints_sum, 
+           fill=region))+
+  geom_bar(stat = 'Identity',
+           position='dodge', 
+           aes(color=region))+
+  ggtitle("Total complaints of each product based on region")+
+  theme(axis.text.x=element_text(angle = 90, 
+                                 hjust = 1, 
+                                 vjust = 0.4))
+
+ggplot(data=complaints_by_region, 
+       aes(x=region, y=complaints_sum, 
+           fill=region))+
+  geom_bar(stat = 'Identity',
+           position='dodge')+
+  facet_wrap(~Product)
+  ggtitle("Total complaints of each product based on region")
+```
+
+This is a very interesting fact that the South region has the highest number of complaints in all product categories. The next region with the second highest number of complaints is the West coast. This leads to another aspect within this dataframe that needs further investigation, which is the quality the business services in the South and the West.
 
