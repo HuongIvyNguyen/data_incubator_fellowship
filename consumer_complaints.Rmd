@@ -135,3 +135,31 @@ ggplot(data=complaints_by_region,
 
 This is a very interesting fact that the South region has the highest number of complaints in all product categories. The next region with the second highest number of complaints is the West coast. This leads to another aspect within this dataframe that needs further investigation, which is the quality the business services in the South and the West.
 
+#### Mortgage Zone: Digging Deeper
+
+Since the mortgage-type product has the most number of complaints filed, I would like to see which company has the largest number of complaints, and within those complaints, how many of them are resolved complaints. 
+
+```{r}
+#Subset mortgage-type product
+mortgage_complaints <- subset(df, df$Product == 'Mortgage'& df$State != '')
+
+#Getting the list of companies who offer mortgage services 
+mortgage_comp <- unique(mortgage_complaints$Company)
+print(paste("There are", length(mortgage_comp), "different companies which offer mortgage services"))
+
+#obtain a list of top 10 mortgage companies that have the largest number of complaints 
+#based on state
+top_20_mortgage <- mortgage_complaints %>%
+   group_by(Company) %>%
+   summarize(complaints_sum = sum(Complaint.ID))%>%
+   arrange(desc(complaints_sum))%>%
+   top_n(20)
+
+ggplot(data=top_20_mortgage, 
+       aes(x=Company, y=complaints_sum), 
+       color=Company) +
+   geom_bar(stat = 'Identity', position='dodge', horiz = TRUE) +
+   ggtitle("Top 20 Companies with the Highest Number of Complaints") +
+   coord_flip()
+```
+
