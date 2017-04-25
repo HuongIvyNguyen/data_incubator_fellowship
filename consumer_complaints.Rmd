@@ -137,7 +137,7 @@ This is a very interesting fact that the South region has the highest number of 
 
 #### Mortgage Zone: Digging Deeper
 
-Since the mortgage-type product has the most number of complaints filed, I would like to see which company has the largest number of complaints, and within those complaints, how many of them are resolved complaints. 
+Since the mortgage-type product has the most number of complaints filed, I would like to see which company has the largest number of complaints, and within those complaints, how many of them are resolved complaints in a timely manner. 
 
 ```{r}
 #Subset mortgage-type product
@@ -162,4 +162,52 @@ ggplot(data=top_20_mortgage,
    ggtitle("Top 20 Companies with the Highest Number of Complaints") +
    coord_flip()
 ```
+
+Next, I want to see whithin these top 20 companies with the highest number of complaints, how many of those complaints are resolved in a timely manner. 
+
+```{r}
+timely_resposes <- filter(mortgage_complaints, 
+                          Company %in% top_20_mortgage[['Company']]) %>%
+   group_by(Company) %>%
+   summarize(on_time = nrow(subset(mortgage_complaints,
+                                   Timely.response. == 'Yes')), 
+             late = nrow(subset(mortgage_complaints, 
+                                Timely.response. == 'No'))) %>%
+   mutate(on_time_percentage = round(100*on_time/(on_time+late),2),
+          delay_percentage = round(100*late/(on_time+late),2)) %>%
+   arrange(desc(delay_percentage))
+
+p1 <- ggplot(data = timely_resposes, aes(x=Company, y=on_time_percentage))+
+   geom_bar(stat='identity')+
+   theme(axis.text.x = element_text(angle=90))+
+   coord_flip()
+
+p2 <- ggplot(data = timely_resposes, aes(x=Company, y=delay_percentage))+
+   geom_bar(stat = "identity")+
+   theme(axis.text.x = element_text(angle=90))+
+   coord_flip()
+
+grid.arrange(p1, p2, nrow=2)
+```
+
+Residential Credit Solutions has the largest percentage in term of delaying to respond to their customers with 21% delayed responses out of the total number of complaints that they have received. CIT Bank National Association has the second largest delay percentage in delayed response, ~6.13%, which is significantly less than Residential Credit Solutions. The other companies in this list have a 4% or less in term of delayed responses, which is tolerable for a large-sized compnay in my opinion. 
+
+This finding makes me more curious in investigate the customer service that Residential Credit Solutions in all types of products that they offer. 
+
+#### Residential Credit Solutions: Zooming In
+
+```{r}
+rcs <- subset(df, 
+              df$Company == "Residential Credit Solutions" & df$State!='' ) %>%
+   group_by(Product) %>%
+   summarize(complaints_sum = sum(Complaint.ID))
+
+rcs['complaint_perc'] <- round(100*rcs$complaints_sum/sum(rcs$complaints_sum),2)
+
+ggplot(data=rcs, aes(x=Product, y=complaint_perc))+
+   geom_bar(stat='identity')
+```
+
+Mortgage service does have the largest number of complaints within this company in comparsion to the other services that this company offers. Hence, instead of using the 'Product' category, I want to dig into the 'sub.product' category to investigate which packages of the mortage prodct has the worst customer service. 
+
 
