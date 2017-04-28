@@ -12,9 +12,23 @@ options(scpien = 9999)
 
 #load the dataset
 df = read.csv("Consumer_Complaints.csv")
+
+#Remove na values from the dataframe
+df <- na.omit(df)
+
+west = c('WA','OR','CA','ID','NV','MT','WY','UT','AZ','CO','NM', 'AK', 'HI')
+south = c('TX','OK','AR','LA','MS','AL','TN','KY','WV','VA','NC','MD','DE','SC','GA','FL')
+midwest = c('ND','SD','NE','KS','IA','MO','MN','WI','IL','MI','IN','OH')
+northeast = c('PA','NY','NJ','CT','RI','MA','VT','NH','ME')
+valid_state <- c(west, south, midwest, northeast)
+
+
+#Remove rows with invalid states
+df <- subset(df, df$State %in% valid_state)
 ```
 
-##**INTRODUCTION**##
+
+##**INTRODUCTION*
 
 This project involves investigating and evaluating the quality of business services from different categories across the United States based on the [Consumer Compalaint Database](https://catalog.data.gov/dataset/consumer-complaint-database#topic=consumer_navigation) collected by the Consumer Financial Protection Bureau (CFPB). The main goal of this project is to use the provided database to point out the quality of business services offered to customers based on the complaints filed. In addition, this data analysis could potentially help businesses compare their customer services or customer satisfactory versus their competitors. Through this comparison, businesses can improve the employee training or develop a new strategy for their business plan to make more profit.   
 
@@ -82,14 +96,9 @@ ggplot(data = complaints_sum, aes(x=Product, y=complaints_sum, fill=Product))+
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.4))
 ```
 
-Mortgage has the highestnumber of complaints of all categories, which makes me more curious to investigate further into differnt sub-product of this product/service to see which service has the most number of complaints and whether these complaints are resolved. However, before jumping to this set of investigation. I would like to group the number of complaints for each product based on different regions within the U.S. to see whether there is a distribution regarding the quality of these business services. 
+Mortgage has the highest number of complaints of all categories, which makes me more curious to investigate further into differnt sub-product of this product/service to see which service has the most number of complaints and whether these complaints are resolved. However, before jumping to this set of investigation. I would like to group the number of complaints for each product based on different regions within the U.S. to see whether there is a distribution regarding the quality of these business services. 
 
 ```{r}
-west = c('WA','OR','CA','ID','NV','MT','WY','UT','AZ','CO','NM', 'AK', 'HI')
-south = c('TX','OK','AR','LA','MS','AL','TN','KY','WV','VA','NC','MD','DE','SC','GA','FL')
-midwest = c('ND','SD','NE','KS','IA','MO','MN','WI','IL','MI','IN','OH')
-northeast = c('PA','NY','NJ','CT','RI','MA','VT','NH','ME')
-
 complaints_by_product <- complaints_by_product[complaints_by_product$State != '',]
 
 #Initialize region column with all NAs 
@@ -133,7 +142,7 @@ ggplot(data=complaints_by_region,
   ggtitle("Total complaints of each product based on region")
 ```
 
-This is a very interesting fact that the South region has the highest number of complaints in all product categories. The next region with the second highest number of complaints is the West coast. This leads to another aspect within this dataframe that needs further investigation, which is the quality the business services in the South and the West.
+The South region has the highest number of complaints in all product categories. The next region with the second highest number of complaints is the West coast.
 
 #### Mortgage Zone: Digging Deeper
 
@@ -194,20 +203,13 @@ Residential Credit Solutions has the largest percentage in term of delaying to r
 
 This finding makes me more curious in investigate the customer service that Residential Credit Solutions in all types of products that they offer. 
 
-#### Residential Credit Solutions: Zooming In
+#### Maping number of complaints by state
 
 ```{r}
-rcs <- subset(df, 
-              df$Company == "Residential Credit Solutions" & df$State!='' ) %>%
-   group_by(Product) %>%
-   summarize(complaints_sum = sum(Complaint.ID))
+library(choroplethr)
+library(choroplethrMaps)
+library(choroplethrZip)
 
-rcs['complaint_perc'] <- round(100*rcs$complaints_sum/sum(rcs$complaints_sum),2)
-
-ggplot(data=rcs, aes(x=Product, y=complaint_perc))+
-   geom_bar(stat='identity')
-```
-
-Mortgage service does have the largest number of complaints within this company in comparsion to the other services that this company offers. Hence, instead of using the 'Product' category, I want to dig into the 'sub.product' category to investigate which packages of the mortage prodct has the worst customer service. 
-
-
+complaints_by_state <- df %>%
+  group_by(State)%>%
+  summarize(complaints_sum = nrow(Complaint.ID))
