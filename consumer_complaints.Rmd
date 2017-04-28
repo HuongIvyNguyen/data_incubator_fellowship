@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(dev = 'pdf', echo=FALSE, warning=TRUE, message=FALSE)
+knitr::opts_chunk$set(dev = 'pdf', echo=FALSE, warning=FALSE, message=FALSE)
 
 options(scpien = 9999)
 
@@ -189,7 +189,37 @@ grid.arrange(p1, p2, nrow=2)
 
 Residential Credit Solutions has the largest percentage in term of delaying to respond to their customers with 21% delayed responses out of the total number of complaints that they have received. CIT Bank National Association has the second largest delay percentage in delayed response, ~6.13%, which is significantly less than Residential Credit Solutions. The other companies in this list have a 4% or less in term of delayed responses, which is tolerable for a large-sized compnay in my opinion. 
 
-This finding makes me more curious in investigate the customer service that Residential Credit Solutions in all types of products that they offer. 
+#### Time series plot
+
+```{r}
+library(dplyr)
+
+df$region[df$State %in% west] <-'West'
+df$region[df$State %in% south] <-'South'
+df$region[df$State %in% midwest] <-'Midwest'
+df$region[df$State %in% northeast] <-'Northeast'
+
+complaints_by_date <- df %>%
+   group_by(Date.received, region) %>%
+   summarize(value = length(Complaint.ID))
+
+complaints_by_date$Date.received = as.Date(complaints_by_date$Date.received, 
+                                           "%m/%d/%Y")
+
+complaints_by_date = na.omit(complaints_by_date)
+
+ggplot(data=complaints_by_date, 
+       aes(x=Date.received, y=value)) +
+   geom_point(alpha=0.3, position='jitter', color='red')+
+   scale_x_date(date_breaks = "6 months", 
+                labels = date_format("%m-%Y"))+
+   theme(axis.text.x = element_text(angle=90))+
+   facet_grid(~region)
+   
+   
+```
+
+The time series plot once again confirms that the South has the largest number of complaints over time. However, it is very interesting that the plots of all regions show to have a split with two branches. I suspect one of these branches belong to the mortgage complaints while the other branch is for the other projects. However, further investigation will be needed to confirm this suspicion. 
 
 #### Maping the number of complaints by state
 
