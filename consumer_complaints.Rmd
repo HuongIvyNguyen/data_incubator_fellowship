@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=TRUE, message=FALSE)
+knitr::opts_chunk$set(dev = 'pdf', echo=FALSE, warning=TRUE, message=FALSE)
 
 options(scpien = 9999)
 
@@ -16,6 +16,7 @@ df = read.csv("Consumer_Complaints.csv")
 #Remove na values from the dataframe
 df <- na.omit(df)
 
+#Adding region lists for later purposes
 west = c('WA','OR','CA','ID','NV','MT','WY','UT','AZ','CO','NM', 'AK', 'HI')
 south = c('TX','OK','AR','LA','MS','AL','TN','KY','WV','VA','NC','MD','DE','SC','GA','FL')
 midwest = c('ND','SD','NE','KS','IA','MO','MN','WI','IL','MI','IN','OH')
@@ -23,12 +24,11 @@ northeast = c('PA','NY','NJ','CT','RI','MA','VT','NH','ME')
 valid_state <- c(west, south, midwest, northeast)
 
 
-#Remove rows with invalid states
+#Remove rows with invalid states in case there is any
 df <- subset(df, df$State %in% valid_state)
 ```
 
-
-##**INTRODUCTION*
+##**INTRODUCTION**##
 
 This project involves investigating and evaluating the quality of business services from different categories across the United States based on the [Consumer Compalaint Database](https://catalog.data.gov/dataset/consumer-complaint-database#topic=consumer_navigation) collected by the Consumer Financial Protection Bureau (CFPB). The main goal of this project is to use the provided database to point out the quality of business services offered to customers based on the complaints filed. In addition, this data analysis could potentially help businesses compare their customer services or customer satisfactory versus their competitors. Through this comparison, businesses can improve the employee training or develop a new strategy for their business plan to make more profit.   
 
@@ -68,28 +68,16 @@ First, I want to count the number of complaints for each different business serv
 
 ```{r}
 complaints_by_product <- df %>%
-  group_by(Product, State) %>%
+  group_by(State, Product) %>%
   summarize(complaints_sum = length(Complaint.ID))
 ```
 
-After investigating this new dataframe, I noticed that there are 12 rows without a state being specified for each product category. These 12 rows are stored in the new_complaints_by_products dataframe. My initial suspection is that these rows are the average of the number of complaints for each service. Let's check out if this assumption is correct.
 
 ```{r}
-new_complaints_by_product <- complaints_by_product[complaints_by_product$State == '',]
-
-complaints_by_product_check <- filter(complaints_by_product, State=='') %>%
-  group_by(Product)%>%
-  summarize(sum_count = mean(complaints_sum))
-```
-
-After checking, the two dataframes: complaints_by_product and new_complaints_by_product look exactly the same. Therefore, I decided to drop these rows out of my complaint_by_product dataset since it would be redundant to keep them. In addition, I would like to get an average number of complaints across all the states to see which product has the most complaints in the U.S.
-
-```{r}
-complaints_sum <- complaints_by_product[complaints_by_product$State != '',]%>%
-  group_by(Product) %>%
+complaints_sum <- complaints_by_product %>%
   summarize(complaints_sum = sum(complaints_sum))
 
-ggplot(data = complaints_sum, aes(x=Product, y=complaints_sum, fill=Product))+
+ggplot(data = complaints_sum, aes(x=State, y=complaints_sum, fill=State))+
   geom_bar(stat = 'Identity',
            position = 'dodge')+
   ggtitle("The average number of complaints by product across all states in the U.S.")+
@@ -167,7 +155,7 @@ top_20_mortgage <- mortgage_complaints %>%
 ggplot(data=top_20_mortgage, 
        aes(x=Company, y=complaints_sum), 
        color=Company) +
-   geom_bar(stat = 'Identity', position='dodge', horiz = TRUE) +
+   geom_bar(stat = 'Identity', position='dodge') +
    ggtitle("Top 20 Companies with the Highest Number of Complaints") +
    coord_flip()
 ```
@@ -203,13 +191,36 @@ Residential Credit Solutions has the largest percentage in term of delaying to r
 
 This finding makes me more curious in investigate the customer service that Residential Credit Solutions in all types of products that they offer. 
 
-#### Maping number of complaints by state
+#### Maping the number of complaints by state
 
 ```{r}
-library(choroplethr)
-library(choroplethrMaps)
-library(choroplethrZip)
+complaints_by_state <- df%>%
+   group_by(State) %>%
+   summarize(value = length(Complaint.ID))
 
-complaints_by_state <- df %>%
-  group_by(State)%>%
-  summarize(complaints_sum = nrow(Complaint.ID))
+mortgage_complaints_by_state <- mortgage_complaints %>%
+   group_by(State) %>%
+   summarize(value = length(Complaint.ID))
+
+
+complaints_by_state$region = tolower(state.name[match(complaints_by_state$State, state.abb)])
+
+mortgage_complaints_by_state$region  = tolower(state.name[match(mortgage_complaints_by_state$State, state.abb)])
+
+
+library(choroplethr)
+
+state_choropleth(complaints_by_state, 
+                 title="Number of Total Complaints of All Businesses by States")
+
+state_choropleth(mortgage_complaints_by_state, 
+                 title = "Number of Complaints from Mortgage Businesses by State")
+```
+
+##**CONCLUSION**
+
+In this study, I wanted to find out the qualities of different services or producted offered in the States by investigating the number of complaints that were filed. I investigated how many of these complaints have delayed response from the company of the service. I started by filtering out the dataset, which was obtained from the indicated linked in the introduction section, by omitting all the datapoints that don't have a valid state. I generated a new dataframe to see which products or services have the largest number of complaints. It turns out that Mortgage services/products have the highest number of complaints files. In addition, I also grouped the number of complaints by Company to list out the top 20 companies with the highest number of complaints. 
+
+By creating a bar plot, which focused on the mortgage section of the data, I found out that Residential Credit Solutions has the largest number of delayed responses to their customers'complaints. In addition, I also generated two choropleths: one shows the distribution of the number of complaints for all products by State and one shows the distribution of the number of complaints for mortgage products by State. 
+
+The main ideas of this study is to help customers have a better idea when they come to choose a particular product and to help companies with the correponding product visualize the statistics and improve their service to the customers. 
