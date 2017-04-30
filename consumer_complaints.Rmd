@@ -5,10 +5,10 @@ date: "April 23, 2017"
 output: html_document
 ---
 
-```{r global_options, include=FALSE}
-knitr::opts_chunk$set(dev = 'pdf', echo=FALSE, warning=FALSE, message=FALSE)
+```{r global_options, include=FALSE, fig.width=14, fig.height=7}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 
-options(scpien = 9999)
+options(scipen=999)
 
 #load the dataset
 df = read.csv("Consumer_Complaints.csv")
@@ -30,24 +30,9 @@ df <- subset(df, df$State %in% valid_state)
 
 ##**INTRODUCTION**##
 
-This project involves investigating and evaluating the quality of business services from different categories across the United States based on the [Consumer Compalaint Database](https://catalog.data.gov/dataset/consumer-complaint-database#topic=consumer_navigation) collected by the Consumer Financial Protection Bureau (CFPB). The main goal of this project is to use the provided database to point out the quality of business services offered to customers based on the complaints filed. In addition, this data analysis could potentially help businesses compare their customer services or customer satisfactory versus their competitors. Through this comparison, businesses can improve the employee training or develop a new strategy for their business plan to make more profit.   
+This project involves investigating and evaluating the quality of business services from different categories across the United States based on the [Consumer Complaint Database](https://catalog.data.gov/dataset/consumer-complaint-database#topic=consumer_navigation) collected by the Consumer Financial Protection Bureau (CFPB). The primary goal of this project is to use the provided database to point out the quality of business services offered to customers based on the complaints filed. Also, this data analysis could potentially help companies compare their customer satisfaction rate to that of their competitors. Through this comparison, businesses can develop new strategy to improve their employee training, which could help to increase the profit of the company.   
 
 ##**DATA EXPLORATORY SECTION**##
-
-### Data Structure
-
-```{r}
-#Get a summary of the data
-summary(df)
-
-#Obtain details of each variable
-str(df)
-
-#View couple lines of the dataframe to see how the data looks like
-head(df)
-```
-
-This dataset contains 762444 observations (rows) and 18 different variables. After looking through the dataset, I want to know how many products are present within this database. 
 
 ```{r}
 ###Load necessary packages for data exploration and analysis###
@@ -64,7 +49,7 @@ library(ggthemes)
 print(paste("There are", length(unique(df$Product)), "different business services in this dataset."))
 ```
 
-First, I want to count the number of complaints for each different business service. In order to accomplish this, I will have to create a new dataframe, which has the sum of count of complaints for each product based on the state. 
+First, I want to count the number of complaints based on state from all different business services. To accomplish this, I will have to create a new data frame, which has the sum of the count of complaint IDs based on the state. 
 
 ```{r}
 complaints_by_product <- df %>%
@@ -80,11 +65,11 @@ complaints_sum <- complaints_by_product %>%
 ggplot(data = complaints_sum, aes(x=State, y=complaints_sum, fill=State))+
   geom_bar(stat = 'Identity',
            position = 'dodge')+
-  ggtitle("The average number of complaints by product across all states in the U.S.")+
-  theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.4))
+  ggtitle("The total number of complaints by state in the U.S.")+
+  coord_flip()
 ```
 
-Mortgage has the highest number of complaints of all categories, which makes me more curious to investigate further into differnt sub-product of this product/service to see which service has the most number of complaints and whether these complaints are resolved. However, before jumping to this set of investigation. I would like to group the number of complaints for each product based on different regions within the U.S. to see whether there is a distribution regarding the quality of these business services. 
+The mortgage has the highest number of complaints of all categories, which makes me more curious to investigate further into different sub-product of this product/service to see which service has the most number of complaints and whether these claims are resolved. However, before jumping to this set of the investigation. I would like to group the number of complaints about each product based on different regions of the U.S. to see whether there is a distribution regarding the quality of these business services. 
 
 ```{r}
 complaints_by_product <- complaints_by_product[complaints_by_product$State != '',]
@@ -98,7 +83,7 @@ complaints_by_product$region[complaints_by_product$State %in% midwest] <-'Midwes
 complaints_by_product$region[complaints_by_product$State %in% northeast] <-'Northeast'
 ```
 
-After assign the region for each row, I also noticed that there are several rows that cannot be assigned due to the wrong state abbreviation. Since it is impossible to identify which state these rows belong to, I decided to remove them from my data analysis. 
+After assigning the region for each row, I also noticed that several rows cannot be assigned due to the wrong state abbreviation. Since it is impossible to identify which state these rows belong to, I decided to remove them from my data analysis. 
 
 ```{r}
 #Remove na values 
@@ -124,17 +109,21 @@ ggplot(data=complaints_by_region,
 ggplot(data=complaints_by_region, 
        aes(x=region, y=complaints_sum, 
            fill=region))+
-  geom_bar(stat = 'Identity',
+   geom_bar(stat = 'Identity',
            position='dodge')+
-  facet_wrap(~Product)
-  ggtitle("Total complaints of each product based on region")
+   facet_wrap(~Product)+
+   ggtitle("Total complaints of each product based on region")+
+   labs(x='region', y='total number of complaints')+
+   theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 ```
 
-The South region has the highest number of complaints in all product categories. The next region with the second highest number of complaints is the West coast.
+The South region has the highest number of complaints in all product categories. The next region with the second highest number of complaints is the West Coast.
 
-#### Mortgage Zone: Digging Deeper
+#### **Mortgage Zone: Digging Deeper**
 
-Since the mortgage-type product has the most number of complaints filed, I would like to see which company has the largest number of complaints, and within those complaints, how many of them are resolved complaints in a timely manner. 
+Since the mortgage-type product has the most number of complaints filed, I would like to see which company has the largest number of complaints, and within those complaints, how many of them are resolved claims promptly. 
 
 ```{r}
 #Subset mortgage-type product
@@ -156,11 +145,11 @@ ggplot(data=top_20_mortgage,
        aes(x=Company, y=complaints_sum), 
        color=Company) +
    geom_bar(stat = 'Identity', position='dodge') +
-   ggtitle("Top 20 Companies with the Highest Number of Complaints") +
+   ggtitle("Mortgage Companies with the Highest Number of Complaints") +
    coord_flip()
 ```
 
-Next, I want to see whithin these top 20 companies with the highest number of complaints, how many of those complaints are resolved in a timely manner. 
+Next, I want to see within these top 20 companies with the highest number of complaints, how many of those complaints are resolved promptly. 
 
 ```{r}
 timely_resposes <- filter(mortgage_complaints, 
@@ -187,13 +176,11 @@ p2 <- ggplot(data = timely_resposes, aes(x=Company, y=delay_percentage))+
 grid.arrange(p1, p2, nrow=2)
 ```
 
-Residential Credit Solutions has the largest percentage in term of delaying to respond to their customers with 21% delayed responses out of the total number of complaints that they have received. CIT Bank National Association has the second largest delay percentage in delayed response, ~6.13%, which is significantly less than Residential Credit Solutions. The other companies in this list have a 4% or less in term of delayed responses, which is tolerable for a large-sized compnay in my opinion. 
+Residential Credit Solutions has the largest percentage in term of delaying to respond to their customers with 21% delayed responses out of the total number of complaints that they have received. CIT Bank National Association has the second largest delay percentage in delayed response, ~6.13%, which is significantly less than Residential Credit Solutions. The other companies on this list have a 4% or less in term of delayed responses, which is tolerable for a large-sized company in my opinion. 
 
-#### Time series plot
+####**Time series plot**
 
 ```{r}
-library(dplyr)
-
 df$region[df$State %in% west] <-'West'
 df$region[df$State %in% south] <-'South'
 df$region[df$State %in% midwest] <-'Midwest'
@@ -214,14 +201,16 @@ ggplot(data=complaints_by_date,
    scale_x_date(date_breaks = "6 months", 
                 labels = date_format("%m-%Y"))+
    theme(axis.text.x = element_text(angle=90))+
-   facet_grid(~region)
+   facet_grid(~region)+
+   labs(y="Number of Complaints", x="Date Received")+
+   ggtitle("Number of Complaints by Date for Each Region")
    
    
 ```
 
-The time series plot once again confirms that the South has the largest number of complaints over time. However, it is very interesting that the plots of all regions show to have a split with two branches. I suspect one of these branches belong to the mortgage complaints while the other branch is for the other projects. However, further investigation will be needed to confirm this suspicion. 
+The time series plot once again confirms that the South has the largest number of complaints about time. However, it is fascinating that the plots of all regions show to have a split with two branches. I suspect this split is due the difference in the number of complaints between weekdays and weekends. However, further investigation will be needed to confirm this suspicion. 
 
-#### Maping the number of complaints by state
+####**Mapping the number of complaints by state**
 
 ```{r}
 complaints_by_state <- df%>%
@@ -249,8 +238,8 @@ state_choropleth(mortgage_complaints_by_state,
 
 ##**CONCLUSION**
 
-In this study, I wanted to find out the qualities of different services or producted offered in the States by investigating the number of complaints that were filed. I investigated how many of these complaints have delayed response from the company of the service. I started by filtering out the dataset, which was obtained from the indicated linked in the introduction section, by omitting all the datapoints that don't have a valid state. I generated a new dataframe to see which products or services have the largest number of complaints. It turns out that Mortgage services/products have the highest number of complaints files. In addition, I also grouped the number of complaints by Company to list out the top 20 companies with the highest number of complaints. 
+In this study, I wanted to find out the qualities of different services or products offered in the States by investigating the number of complaints that were filed. I investigated how many of these complaints have delayed response from the company of the service. I started by filtering out the dataset, which was obtained from the indicated linked in the introduction section, by omitting all the data points that don't have a valid state. I generated a new data frame to see which products or services have the largest number of complaints. It turns out that Mortgage services/products have the highest number of complaints files. Also, I also grouped the number of complaints by Company to list out the top 20 companies with the largest number of complaints. 
 
-By creating a bar plot, which focused on the mortgage section of the data, I found out that Residential Credit Solutions has the largest number of delayed responses to their customers'complaints. In addition, I also generated two choropleths: one shows the distribution of the number of complaints for all products by State and one shows the distribution of the number of complaints for mortgage products by State. 
+By creating a bar plot, which focused on the mortgage section of the data, I found out that Residential Credit Solutions has the largest number of delayed responses to their customer's complaints. Also, I also generated two choropleths: one shows the distribution of the number of complaints about all products by State and one illustrates the distribution of the number of complaints about mortgage products by State. 
 
-The main ideas of this study is to help customers have a better idea when they come to choose a particular product and to help companies with the correponding product visualize the statistics and improve their service to the customers. 
+The main ideas of this study are to help customers have a better picture when they come to choose a particular product and to help companies with the corresponding product visualize the statistics and improve their service to the customers. 
